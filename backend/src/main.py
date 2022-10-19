@@ -23,3 +23,8 @@ def btcsmaprofit(investment_value : int):
     btcsmapro = post_btc_sma(investment_value)
     return Response(content=btcsmapro, media_type='application/json')
 
+@app.get("/btc_macd")
+def btcmacdinfo():
+    btcmacdinf = get_btc_macd()
+    return Response(content=btcmacdinf, media_type='application/json')
+

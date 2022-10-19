@@ -19,7 +19,7 @@ btc.to_csv("btc.csv")
 btc = pd.read_csv("btc.csv")
 
 def get_btc_info():
-    json_result = btc.to_json(orient='index')
+    json_result = btc.astype(str).to_json(orient='index')
     addName = "["+json_result+","+"{\"name\": \"BTC\"}]"
     return addName
 
@@ -106,7 +106,7 @@ btcsma = pd.merge(btcsma,strategy[['sma_signal','sma_position']],how='outer' ,on
 btcsma = btcsma.rename(columns={'key_0':'Date'})
 
 def get_btc_sma():
-    json_result =  btcsma.to_json(orient='index')
+    json_result =  btcsma.astype(str).to_json(orient='index')
     addName = "["+json_result+","+"{\"name\": \"BTC\"}]"
     return addName
 
@@ -133,3 +133,89 @@ def post_btc_sma(investment_value):
     sma_investment_ret_df = pd.DataFrame(sma_investment_ret).rename(columns = {0:'investment_returns'})
     total_investment_ret = round(sum(sma_investment_ret_df['investment_returns']), 2)
     return(f'{total_investment_ret}')
+
+btcmacd = pd.read_csv('btc.csv').set_index('Date')
+btcmacd.index =pd.to_datetime(btcmacd.index)
+
+def get_macd(price, slow, fast, smooth):
+    exp1 = price.ewm(span = fast, adjust = False).mean()
+    exp2 = price.ewm(span = slow, adjust = False).mean()
+    macd = pd.DataFrame(exp1 - exp2).rename(columns = {'Close':'MACD'})
+    signal = pd.DataFrame(macd.ewm(span = smooth, adjust = False).mean()).rename(columns = {'MACD':'Signal line'})
+    hist = pd.DataFrame(macd['MACD'] - signal['Signal line']).rename(columns = {0:'hist'})
+    frames =  [macd, signal, hist]
+    df = pd.concat(frames, join = 'inner', axis = 1)
+    return df
+
+btc_macd = get_macd(btcmacd['Close'], 26, 12, 9)
+
+def implement_macd_strategy(prices, data):    
+    buy_price = []
+    sell_price = []
+    macd_signal = []
+    signal = 0
+
+    for i in range(len(data)):
+        if data['MACD'][i] > data['Signal line'][i]:
+            if signal != 1:
+                buy_price.append(prices[i])
+                sell_price.append(np.nan)
+                signal = 1
+                macd_signal.append(signal)
+            else:
+                buy_price.append(np.nan)
+                sell_price.append(np.nan)
+                macd_signal.append(0)
+        elif data['MACD'][i] < data['Signal line'][i]:
+            if signal != -1:
+                buy_price.append(np.nan)
+                sell_price.append(prices[i])
+                signal = -1
+                macd_signal.append(signal)
+            else:
+                buy_price.append(np.nan)
+                sell_price.append(np.nan)
+                macd_signal.append(0)
+        else:
+            buy_price.append(np.nan)
+            sell_price.append(np.nan)
+            macd_signal.append(0)
+            
+    return buy_price, sell_price, macd_signal
+            
+buy_price, sell_price, macd_signal = implement_macd_strategy(btcmacd['Close'],btc_macd)
+
+position = []
+for i in range(len(macd_signal)):
+    if macd_signal[i] > 1:
+        position.append(0)
+    else:
+        position.append(1)
+        
+for i in range(len(btcmacd['Close'])):
+    if  macd_signal[i] == 1:
+        position[i] = 1
+    elif macd_signal[i] == -1:
+        position[i] = 0
+    else:
+        position[i] = position[i-1]
+        
+macd = btc_macd['MACD']
+signal = btc_macd['Signal line']
+close_price = btcmacd['Close']
+macd_signal = pd.DataFrame(macd_signal).rename(columns = {0:'macd_signal'}).set_index(btcmacd.index)
+position = pd.DataFrame(position).rename(columns = {0:'macd_position'}).set_index(btcmacd.index)
+
+macdframes = [close_price, macd, signal, macd_signal, position]
+macdstrategy = pd.concat(macdframes, join = 'inner', axis = 1)
+#print(macdstrategy)
+
+btcmacd = pd.merge(btcmacd,macdstrategy[['macd_signal','macd_position']],how='outer' ,on=btcmacd.index)
+btcmacd = btcmacd.rename(columns={'key_0':'Date'})
+btcmacd = pd.merge(btcmacd,btc_macd[['MACD','Signal line','hist']],how='outer' ,on='Date')
+
+def get_btc_macd():
+    json_macd =  btcmacd.astype(str).to_json(orient='index')
+    btcmacdName = "["+json_macd+","+"{\"name\": \"BTC\"}]"
+    return btcmacdName
+    
