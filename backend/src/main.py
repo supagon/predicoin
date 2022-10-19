@@ -28,3 +28,8 @@ def btcmacdinfo():
     btcmacdinf = get_btc_macd()
     return Response(content=btcmacdinf, media_type='application/json')
 
+@app.post("/btc_macd")
+def btcmacdprofit(investment_value : int):
+    btcmacdpro = post_btc_macd(investment_value)
+    return Response(content=btcmacdpro, media_type='application/json')
+

@@ -134,6 +134,7 @@ def post_btc_sma(investment_value):
     total_investment_ret = round(sum(sma_investment_ret_df['investment_returns']), 2)
     return(f'{total_investment_ret}')
 
+#MACD
 btcmacd = pd.read_csv('btc.csv').set_index('Date')
 btcmacd.index =pd.to_datetime(btcmacd.index)
 
@@ -218,4 +219,29 @@ def get_btc_macd():
     json_macd =  btcmacd.astype(str).to_json(orient='index')
     btcmacdName = "["+json_macd+","+"{\"name\": \"BTC\"}]"
     return btcmacdName
-    
+
+def post_btc_macd(investment_value):
+    btcmacd_ret = pd.DataFrame(np.diff(btcmacd['Close'])).rename(columns = {0:'returns'})
+    macd_strategy_ret = []
+
+    for i in range(len(btcmacd_ret)):
+        try:
+            returns = btcmacd_ret['returns'][i]*macdstrategy['macd_position'][i]
+            macd_strategy_ret.append(returns)
+        except:
+            pass
+        
+    macd_strategy_ret_df = pd.DataFrame(macd_strategy_ret).rename(columns = {0:'macd_returns'})
+
+    #investment_value = 100000
+    number_of_stocks = floor(investment_value/btcmacd['Close'][0])
+    macd_investment_ret = []
+
+    for i in range(len(macd_strategy_ret_df['macd_returns'])):
+        returns = number_of_stocks*macd_strategy_ret_df['macd_returns'][i]
+        macd_investment_ret.append(returns)
+
+    macd_investment_ret_df = pd.DataFrame(macd_investment_ret).rename(columns = {0:'investment_returns'})
+    total_investment_ret = round(sum(macd_investment_ret_df['investment_returns']), 2)
+    #profit_percentage = floor((total_investment_ret/investment_value)*100)
+    return(f'{total_investment_ret}')
