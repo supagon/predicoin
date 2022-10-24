@@ -1,4 +1,5 @@
 import os
+import sys
 import pandas as pd
 import numpy as np
 from numpy import array
@@ -76,7 +77,7 @@ def model_prediction():
     model.add(LSTM(10,input_shape=(None,1),activation="relu"))
     model.add(Dense(1))
     model.compile(loss="mean_squared_error",optimizer="adam")
-    history = model.fit(X_train,y_train,validation_data=(X_test,y_test),epochs=100,batch_size=32,verbose=1)
+    history = model.fit(X_train,y_train,validation_data=(X_test,y_test),epochs=20,batch_size=32,verbose=1)
 
     ### Lets Do the prediction and check performance metrics
     train_predict=model.predict(X_train)
@@ -146,6 +147,8 @@ def model_prediction():
         'last_original_days_value':last_original_days_value,
         'next_predicted_days_value':next_predicted_days_value
     })
+    #new_pred_plot = new_pred_plot.reset_index()
+    #print(new_pred_plot)
     return new_pred_plot
 
 def get_rmse():
@@ -162,7 +165,7 @@ def get_rmse():
     model.add(LSTM(10,input_shape=(None,1),activation="relu"))
     model.add(Dense(1))
     model.compile(loss="mean_squared_error",optimizer="adam")
-    history = model.fit(X_train,y_train,validation_data=(X_test,y_test),epochs=100,batch_size=32,verbose=1)
+    history = model.fit(X_train,y_train,validation_data=(X_test,y_test),epochs=20,batch_size=32,verbose=1)
 
     ### Lets Do the prediction and check performance metrics
     train_predict=model.predict(X_train)
@@ -187,3 +190,8 @@ def get_new_prediction():
     json_result = new_pred_plot.to_json(orient='index')
     addName = "["+json_result+","+"{\"name\": \"BTC\"}, {\"RMSE\":"+ get_rmse()+"}]"
     return addName
+    #json_result = new_pred_plot.to_json()
+    #name = [{name}]
+    #addName = json_result.append[{"name": "BTC"}]
+    #return addName
+    

@@ -18,8 +18,17 @@ btc = web.get_data_yahoo('BTC-USD', start='2018-01-01', end=datetime.now())
 btc.to_csv("btc.csv")
 btc = pd.read_csv("btc.csv")
 
+
 def get_btc_info():
-    json_result = btc.astype(str).to_json(orient='index')
+    btcinfo = pd.read_csv('btc.csv')
+    btcdaily = pd.read_csv('btc.csv',header=0)
+    btcdaily['Date'] = pd.to_datetime(btcdaily['Date'])
+    btcdaily = btcdaily.resample('D', on='Date').sum()
+    btcdaily['24hchange'] = btcdaily['Adj Close'].pct_change()
+    btcinfo = pd.merge(btcinfo,btcdaily[['24hchange']],how='outer' ,on=btcinfo['Date'])
+    btcinfo = btcinfo.drop(columns={'key_0'})
+    print(btcinfo)
+    json_result = btcinfo.astype(str).to_json(orient='index')
     addName = "["+json_result+","+"{\"name\": \"BTC\"}]"
     return addName
 
