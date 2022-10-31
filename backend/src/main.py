@@ -28,6 +28,16 @@ def btcmacdinfo():
     btcmacdinf = get_btc_macd()
     return Response(content=btcmacdinf, media_type='application/json')
 
+# @app.get("/test")
+# def test():
+#     test1 = original_vs_predict()
+#     return Response(content=test1, media_type='application/json')
+
+# @app.get("/save_result")
+# def save():
+#     save_result()
+#     return {"status": "Success"}
+
 @app.post("/btc_macd")
 def btcmacdprofit(investment_value : int):
     btcmacdpro = post_btc_macd(investment_value)

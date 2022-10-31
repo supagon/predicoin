@@ -1,5 +1,6 @@
 import os
 import sys
+import joblib
 import pandas as pd
 import numpy as np
 from numpy import array
@@ -13,6 +14,7 @@ import json
 from sklearn.metrics import mean_squared_error, mean_absolute_error, explained_variance_score, r2_score 
 from sklearn.metrics import mean_poisson_deviance, mean_gamma_deviance, accuracy_score
 from sklearn.preprocessing import MinMaxScaler
+from sklearn.utils import _joblib
 
 # For model building we will use these library
 
@@ -149,7 +151,57 @@ def model_prediction():
     })
     #new_pred_plot = new_pred_plot.reset_index()
     #print(new_pred_plot)
-    return new_pred_plot
+    look_back=time_step
+    trainPredictPlot = np.empty_like(closedf)
+    trainPredictPlot[:, :] = np.nan
+    trainPredictPlot[look_back:len(train_predict)+look_back, :] = train_predict
+    print("Train predicted data: ", trainPredictPlot.shape)
+
+    # shift test predictions for plotting
+    testPredictPlot = np.empty_like(closedf)
+    testPredictPlot[:, :] = np.nan
+    testPredictPlot[len(train_predict)+(look_back*2)+1:len(closedf)-1, :] = test_predict
+    print("Test predicted data: ", testPredictPlot.shape)
+
+    names = cycle(['Original close price','Train predicted close price','Test predicted close price'])
+
+
+    plotdf = pd.DataFrame({'date': close_stock['Date'],
+                        'original_close': close_stock['Close'],
+                        'train_predicted_close': trainPredictPlot.reshape(1,-1)[0].tolist(),
+                        'test_predicted_close': testPredictPlot.reshape(1,-1)[0].tolist()})
+    
+    newplotdf = plotdf.loc[plotdf['date'] >= dt.datetime.now()- dt.timedelta(days = 30)]
+    newplotdf['date'] = newplotdf['date'].dt.strftime('%Y-%m-%d')
+    
+    #print(newplotdf)
+
+    train_predict_arr=[]
+    closing_price_arr = []
+    closing_price_arr = np.append(closing_price_arr, np.repeat(np.nan, 30))
+    train_predict_arr = np.append(train_predict_arr, np.repeat(np.nan, 30))
+    date_arr = []
+    date = dt.datetime.now()
+    for i in range(30):
+        date=date + dt.timedelta(days = 1)
+        date_arr.append(date.strftime('%Y-%m-%d'))
+    
+    test_predict_arr = new_pred_plot.iloc[16:]['next_predicted_days_value']
+    d = {'date': date_arr, 'original_close': closing_price_arr,'train_predicted_close':train_predict_arr,'test_predicted_close':test_predict_arr}
+    df = pd.DataFrame(data=d)
+    #print(df)
+
+    predict_final = [newplotdf,df]
+    predict_final_result = pd.concat(predict_final)
+    #print(predict_final_result)
+    return predict_final_result
+
+# def save_result():
+#     model = model_prediction()
+#     saved_model = json.dumps(model.to_dict(), indent=4)
+#     with open("finish_model.json", "w") as outfile:
+#         outfile.write(saved_model)
+
 
 def get_rmse():
     time_step = 15
@@ -187,7 +239,7 @@ def get_rmse():
 
 def get_new_prediction():
     new_pred_plot = model_prediction()
-    json_result = new_pred_plot.to_json(orient='index')
+    json_result = new_pred_plot.to_json(orient='records')
     addName = "["+json_result+","+"{\"name\": \"BTC\"}, {\"RMSE\":"+ get_rmse()+"}]"
     return addName
     #json_result = new_pred_plot.to_json()
