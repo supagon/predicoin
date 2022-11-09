@@ -32,7 +32,7 @@ import plotly.graph_objects as go
 import plotly.express as px
 from plotly.subplots import make_subplots
 
-maindf=pd.read_csv('btc.csv')
+maindf=pd.read_csv('sol.csv')
 maindf.shape
 maindf['Date'] = pd.to_datetime(maindf['Date'], format='%Y-%m-%d')
 names = cycle(['Stock Open Price','Stock Close Price','Stock High Price','Stock Low Price'])
@@ -66,7 +66,7 @@ def create_dataset(dataset, time_step=1):
         dataY.append(dataset[i + time_step, 0])
     return np.array(dataX), np.array(dataY)
 
-def model_prediction():
+def sol_model_prediction():
     time_step = 15
     X_train, y_train = create_dataset(train_data, time_step)
     X_test, y_test = create_dataset(test_data, time_step)
@@ -204,7 +204,7 @@ def model_prediction():
 #         outfile.write(saved_model)
 
 
-def get_rmse():
+def sol_get_rmse():
     time_step = 15
     X_train, y_train = create_dataset(train_data, time_step)
     X_test, y_test = create_dataset(test_data, time_step)
@@ -238,13 +238,12 @@ def get_rmse():
     rmse = math.sqrt(mean_squared_error(original_ytrain,train_predict))
     return str(rmse)
 
-def get_new_prediction():
-    new_pred_plot = model_prediction()
+def sol_get_new_prediction():
+    new_pred_plot = sol_model_prediction()
     json_result = new_pred_plot.to_json(orient='records')
-    addName = "["+json_result+","+"{\"name\": \"BTC\"}, {\"RMSE\":"+ get_rmse()+"}]"
+    addName = "["+json_result+","+"{\"name\": \"SOL\"}, {\"RMSE\":"+ sol_get_rmse()+"}]"
     return addName
     #json_result = new_pred_plot.to_json()
     #name = [{name}]
-    #addName = json_result.append[{"name": "BTC"}]
+    #addName = json_result.append[{"name": "sol"}]
     #return addName
-    

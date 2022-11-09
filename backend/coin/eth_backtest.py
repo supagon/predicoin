@@ -13,7 +13,7 @@ from termcolor import colored as cl
 plt.style.use('fivethirtyeight')
 # %matplotlib inline
 
-eth = web.get_data_yahoo('ETH-USD', start='2018-01-01', end=datetime.now())
+eth = web.get_data_yahoo('ETH-USD', start='2021-01-01', end=datetime.now())
 
 eth.to_csv("eth.csv")
 eth = pd.read_csv("eth.csv")

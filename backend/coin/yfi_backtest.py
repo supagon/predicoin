@@ -13,7 +13,7 @@ from termcolor import colored as cl
 plt.style.use('fivethirtyeight')
 # %matplotlib inline
 
-yfi = web.get_data_yahoo('YFI-USD', start='2018-01-01', end=datetime.now())
+yfi = web.get_data_yahoo('YFI-USD', start='2021-01-01', end=datetime.now())
 
 yfi.to_csv("yfi.csv")
 yfi = pd.read_csv("yfi.csv")

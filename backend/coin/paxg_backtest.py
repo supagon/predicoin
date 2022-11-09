@@ -13,7 +13,7 @@ from termcolor import colored as cl
 plt.style.use('fivethirtyeight')
 # %matplotlib inline
 
-paxg = web.get_data_yahoo('PAXG-USD', start='2018-01-01', end=datetime.now())
+paxg = web.get_data_yahoo('PAXG-USD', start='2021-01-01', end=datetime.now())
 
 paxg.to_csv("paxg.csv")
 paxg = pd.read_csv("paxg.csv")

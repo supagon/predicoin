@@ -7,13 +7,15 @@ from datetime import datetime
 from pandas_datareader.data import DataReader
 import sklearn.preprocessing
 from scipy.signal import savgol_filter
+from matplotlib.dates import DateFormatter
 import math
 from math import floor
 from termcolor import colored as cl
 plt.style.use('fivethirtyeight')
+plt.rcParams['figure.figsize'] = (15, 8)
 # %matplotlib inline
 
-btc = web.get_data_yahoo('BTC-USD', start='2018-01-01', end=datetime.now())
+btc = web.get_data_yahoo('BTC-USD', start='2021-01-01', end=datetime.now())
 
 btc.to_csv("btc.csv")
 btc = pd.read_csv("btc.csv")
@@ -113,6 +115,29 @@ strategy = strategy.reset_index().drop('Date', axis = 1)
 
 btcsma = pd.merge(btcsma,strategy[['sma_signal','sma_position']],how='outer' ,on=btcsma.index)
 btcsma = btcsma.rename(columns={'key_0':'Date'})
+
+def plt_btc_sma():
+    btcsma.set_index('Date',inplace=True)
+    sma_20 = btcsma['sma_20']
+    sma_50 = btcsma['sma_50']
+    buy_price, sell_price, signal = implement_sma_strategy(btcsma['Close'], sma_20, sma_50)
+    plt.plot(btcsma['Close'], alpha = 0.3, label = 'BTC')
+    plt.plot(sma_20, alpha = 0.6, label = 'SMA 20')
+    plt.plot(sma_50, alpha = 0.6, label = 'SMA 50')
+    plt.scatter(btcsma.index, buy_price, marker = '^', s = 200, color = 'darkblue', label = 'BUY SIGNAL')
+    plt.scatter(btcsma.index, sell_price, marker = 'v', s = 200, color = 'crimson', label = 'SELL SIGNAL')
+    plt.legend(loc = 'upper left')
+    plt.title('BTC SMA CROSSOVER TRADING SIGNALS')
+    
+    #date_form = DateFormatter("%d-%m-%Y")
+    #plt.xaxis.set_major_formatter(date_form)
+    #plt.show()
+    #plt.savefig("output.jpg")
+    return(plt.savefig("sma_output.jpg",dpi=1200))
+
+def send_file(filePath):
+    with open(filePath, mode="rb") as file_like:
+        yield from file_like
 
 def get_btc_sma():
     json_result =  btcsma.astype(str).to_json(orient='index')
