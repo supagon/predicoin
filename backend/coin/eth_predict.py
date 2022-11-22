@@ -11,7 +11,7 @@ import json
 
 # For Evalution we will use these library
 
-from sklearn.metrics import mean_squared_error, mean_absolute_error, explained_variance_score, r2_score 
+from sklearn.metrics import mean_squared_error, mean_absolute_error, explained_variance_score, r2_score ,mean_absolute_percentage_error
 from sklearn.metrics import mean_poisson_deviance, mean_gamma_deviance, accuracy_score
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.utils import _joblib
@@ -22,7 +22,7 @@ import tensorflow as tf
 from tensorflow.python.keras.models import Sequential
 from tensorflow.python.keras.layers import Dense, Dropout
 from tensorflow.python.keras.layers import LSTM
-
+from tensorflow import keras
 
 # For PLotting we will use these library
 
@@ -66,7 +66,7 @@ def create_dataset(dataset, time_step=1):
         dataY.append(dataset[i + time_step, 0])
     return np.array(dataX), np.array(dataY)
 
-def eth_model_prediction():
+def train_model_eth():
     time_step = 15
     X_train, y_train = create_dataset(train_data, time_step)
     X_test, y_test = create_dataset(test_data, time_step)
@@ -81,6 +81,14 @@ def eth_model_prediction():
     model.add(Dense(1))
     model.compile(loss="mean_squared_error",optimizer="adam")
     history = model.fit(X_train,y_train,validation_data=(X_test,y_test),epochs=200,batch_size=32,verbose=1)
+    
+    return model.save("my_model_eth.h5")
+
+def eth_model_prediction():
+    model = keras.models.load_model('my_model_eth.h5')
+    time_step = 15
+    X_train, y_train = create_dataset(train_data, time_step)
+    X_test, y_test = create_dataset(test_data, time_step)
 
     ### Lets Do the prediction and check performance metrics
     train_predict=model.predict(X_train)
@@ -212,13 +220,8 @@ def eth_get_rmse():
     # reshape input to be [samples, time steps, features] which is required for LSTM
     X_train =X_train.reshape(X_train.shape[0],X_train.shape[1] , 1)
     X_test = X_test.reshape(X_test.shape[0],X_test.shape[1] , 1)
-
-    #actual model build
-    model=Sequential()
-    model.add(LSTM(10,input_shape=(None,1),activation="relu"))
-    model.add(Dense(1))
-    model.compile(loss="mean_squared_error",optimizer="adam")
-    history = model.fit(X_train,y_train,validation_data=(X_test,y_test),epochs=200,batch_size=32,verbose=1)
+    
+    model = keras.models.load_model('my_model_eth.h5')
 
     ### Lets Do the prediction and check performance metrics
     train_predict=model.predict(X_train)
@@ -238,10 +241,68 @@ def eth_get_rmse():
     rmse = math.sqrt(mean_squared_error(original_ytrain,train_predict))
     return str(rmse)
 
+def eth_get_r2():
+    time_step = 15
+    X_train, y_train = create_dataset(train_data, time_step)
+    X_test, y_test = create_dataset(test_data, time_step)
+
+    # reshape input to be [samples, time steps, features] which is required for LSTM
+    X_train =X_train.reshape(X_train.shape[0],X_train.shape[1] , 1)
+    X_test = X_test.reshape(X_test.shape[0],X_test.shape[1] , 1)
+
+    model = keras.models.load_model('my_model_eth.h5')
+    
+    ### Lets Do the prediction and check performance metrics
+    train_predict=model.predict(X_train)
+    test_predict=model.predict(X_test)
+    train_predict.shape, test_predict.shape
+
+    # Transform back to original form
+    train_predict = scaler.inverse_transform(train_predict)
+    test_predict = scaler.inverse_transform(test_predict)
+    original_ytrain = scaler.inverse_transform(y_train.reshape(-1,1)) 
+    original_ytest = scaler.inverse_transform(y_test.reshape(-1,1)) 
+
+    #Predicting next 30 days
+    x_input=test_data[len(test_data)-time_step:].reshape(1,-1)
+    temp_input=list(x_input)
+    temp_input=temp_input[0].tolist()
+    r2score = r2_score(original_ytrain, train_predict)
+    return str(r2score)
+
+def eth_get_mape():
+    time_step = 15
+    X_train, y_train = create_dataset(train_data, time_step)
+    X_test, y_test = create_dataset(test_data, time_step)
+
+    # reshape input to be [samples, time steps, features] which is required for LSTM
+    X_train =X_train.reshape(X_train.shape[0],X_train.shape[1] , 1)
+    X_test = X_test.reshape(X_test.shape[0],X_test.shape[1] , 1)
+
+    model = keras.models.load_model('my_model_eth.h5')
+    
+    ### Lets Do the prediction and check performance metrics
+    train_predict=model.predict(X_train)
+    test_predict=model.predict(X_test)
+    train_predict.shape, test_predict.shape
+
+    # Transform back to original form
+    train_predict = scaler.inverse_transform(train_predict)
+    test_predict = scaler.inverse_transform(test_predict)
+    original_ytrain = scaler.inverse_transform(y_train.reshape(-1,1)) 
+    original_ytest = scaler.inverse_transform(y_test.reshape(-1,1)) 
+
+    #Predicting next 30 days
+    x_input=test_data[len(test_data)-time_step:].reshape(1,-1)
+    temp_input=list(x_input)
+    temp_input=temp_input[0].tolist()
+    mape_score = mean_absolute_percentage_error(original_ytrain, train_predict)
+    return str(mape_score)
+
 def eth_get_new_prediction():
     new_pred_plot = eth_model_prediction()
     json_result = new_pred_plot.to_json(orient='records')
-    addName = "["+json_result+","+"{\"name\": \"ETH\"}, {\"RMSE\":"+ eth_get_rmse()+"}]"
+    addName = "["+json_result+","+"{\"name\": \"ETH\"}, {\"RMSE\":"+ eth_get_rmse()+"},{\"R-Square\":"+ eth_get_r2()+"},{\"MAPE\":"+ eth_get_mape()+"}]"
     return addName
     #json_result = new_pred_plot.to_json()
     #name = [{name}]
